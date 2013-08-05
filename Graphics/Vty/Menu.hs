@@ -36,7 +36,7 @@ http://cheater.posterous.com/haskell-curses
 
 -}
 
-module Graphics.Vty.Menu(displayMenu) where
+module Graphics.Vty.Menu(displayMenu,displayMenuOfValues) where
 import qualified Graphics.Vty as Vty
 
 getName :: String -> String
@@ -117,11 +117,15 @@ eventLoop position offset items vt = do
 
 displayMenu :: [String] -> IO (Maybe String)
 displayMenu items = do
+ displayMenuOfValues $ zip items items
+
+displayMenuOfValues :: [(String,a)] -> IO (Maybe a)
+displayMenuOfValues items = do
  vty <- allocate
- (vty',maybePos) <- work 0 0 items vty
+ (vty',maybePos) <- work 0 0 (map fst items) vty
  deallocate vty'
  case maybePos of
-  Just pos -> return $ Just $ items !! pos
+  Just pos -> return $ Just $ snd $ items !! pos
   Nothing -> return Nothing
 
 --main = do
