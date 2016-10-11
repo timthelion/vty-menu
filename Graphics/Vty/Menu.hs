@@ -38,6 +38,9 @@ http://cheater.posterous.com/haskell-curses
 
 module Graphics.Vty.Menu(displayMenu,displayMenuOfValues) where
 import qualified Graphics.Vty as Vty
+import Graphics.Vty.Input
+import Graphics.Vty.Output
+import Graphics.Vty.Config
 
 getName :: String -> String
 getName item = item
@@ -48,22 +51,22 @@ itemImage :: String -> Bool -> Vty.Image
 itemImage item cursor = do
 -- prints out info on an item
     let
-     wfc = Vty.with_fore_color
-     wbc = Vty.with_back_color
+     wfc = Vty.withForeColor
+     wbc = Vty.withBackColor
      (indicator, useColor) =
       if cursor
        then (" > ", True)
        else ("   ", False)
      attr =
       if useColor
-       then Vty.current_attr `wfc` Vty.black `wbc` Vty.white
-       else Vty.current_attr `wfc` Vty.white `wbc` Vty.black
+       then Vty.currentAttr `wfc` Vty.black `wbc` Vty.white
+       else Vty.currentAttr `wfc` Vty.white `wbc` Vty.black
     Vty.string attr $ indicator ++ (getName item)
 
 allocate :: IO Vty.Vty
 allocate = do
 -- sets up Vty
-    vt <- Vty.mkVty
+    vt <- standardIOConfig >>= Vty.mkVty
     return vt
 
 deallocate :: Vty.Vty -> IO ()
@@ -74,21 +77,21 @@ deallocate vt =
 handleKeyboard :: Vty.Key -> Int -> Int -> [String] -> Vty.Vty -> IO (Vty.Vty,Maybe Int)
 handleKeyboard key position offset items vt = case key of
 -- handles keyboard input
-    Vty.KASCII 'q' -> return (vt,Nothing)
-    Vty.KEsc -> return (vt,Nothing)
-    Vty.KEnter -> return (vt,Just position)
-    Vty.KASCII 'j' -> work (position + 1) offset items vt
-    Vty.KDown -> work (position + 1) offset items vt
-    Vty.KASCII 'k' -> work (position - 1) offset items vt
-    Vty.KUp -> work (position - 1) offset items vt
+    KChar 'q' -> return (vt,Nothing)
+    KEsc -> return (vt,Nothing)
+    KEnter -> return (vt,Just position)
+    KChar 'j' -> work (position + 1) offset items vt
+    KDown -> work (position + 1) offset items vt
+    KChar 'k' -> work (position - 1) offset items vt
+    KUp -> work (position - 1) offset items vt
     _ -> work position offset items vt
-	 
+ 
 
 work :: Int -> Int -> [String] -> Vty.Vty -> IO (Vty.Vty,Maybe Int)
 work requestedPosition offset items vt = do
 -- displays items 
     let position = max 0 (min requestedPosition (length items - 1))
-    Vty.DisplayRegion cols rows <- (Vty.terminal_handle >>= Vty.display_bounds)
+    (cols, rows) <- displayBounds $ Vty.outputIface vt
     let
      (cols2, rows2) = (fromEnum cols, fromEnum rows)
      screenPosition = position + offset
@@ -103,14 +106,14 @@ work requestedPosition offset items vt = do
       map
        (\(line, item) -> itemImage item (line == position))
        items2
-     imagesUnified = Vty.vert_cat itemImages
-     pic = Vty.pic_for_image $ imagesUnified
+     imagesUnified = Vty.vertCat itemImages
+     pic = Vty.picForImage $ imagesUnified
     Vty.update vt pic
     eventLoop position offset2 items vt
 
 eventLoop :: Int -> Int -> [String] -> Vty.Vty -> IO (Vty.Vty, Maybe Int)
 eventLoop position offset items vt = do
-    ev <- Vty.next_event vt
+    ev <- Vty.nextEvent vt
     case ev of
      Vty.EvKey key _ -> handleKeyboard key position offset items vt
      _ -> eventLoop position offset items vt
