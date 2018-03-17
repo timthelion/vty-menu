@@ -91,7 +91,7 @@ work :: Int -> Int -> [String] -> Vty.Vty -> IO (Vty.Vty,Maybe Int)
 work requestedPosition offset items vt = do
 -- displays items 
     let position = max 0 (min requestedPosition (length items - 1))
-    (cols, rows) <- displayBounds $ Vty.outputIface vt
+    (cols, rows) <- Vty.displayBounds $ Vty.outputIface vt
     let
      (cols2, rows2) = (fromEnum cols, fromEnum rows)
      screenPosition = position + offset
