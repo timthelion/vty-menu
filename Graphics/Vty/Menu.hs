@@ -84,6 +84,14 @@ handleKeyboard key position offset items vt = case key of
     KDown -> work (position + 1) offset items vt
     KChar 'k' -> work (position - 1) offset items vt
     KUp -> work (position - 1) offset items vt
+    KPageUp -> do
+        bounds <- Vty.displayBounds $ Vty.outputIface vt
+        work (position - (Vty.regionHeight bounds)) offset items vt
+    KPageDown -> do
+        bounds <- Vty.displayBounds $ Vty.outputIface vt
+        work (position + (Vty.regionHeight bounds)) offset items vt
+    KHome -> work 0 offset items vt
+    KEnd -> work (length items - 1) offset items vt
     _ -> work position offset items vt
  
 
